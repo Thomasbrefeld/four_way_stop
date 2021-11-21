@@ -1,0 +1,26 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "",
+        "limitSymbolsToIncludedHeaders": true
+      },
+      "includePath": [
+        "/home/thomas/catkin_ws/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/thomas/catkin_ws/src/Sensor-Vimba/avt_vimba_camera/include/**",
+        "/home/thomas/catkin_ws/src/dataspeed_ulc_ros/dataspeed_ulc_can/include/**",
+        "/home/thomas/catkin_ws/src/dbw_polaris_ros/dbw_polaris_can/include/**",
+        "/home/thomas/catkin_ws/src/Sensor-Vimba/image_pipeline/image_proc/include/**",
+        "/home/thomas/catkin_ws/src/ethz_piksi_ros/rqt_gps_rtk_plugin/include/**",
+        "/home/thomas/catkin_ws/src/velodyne/velodyne_driver/include/**",
+        "/home/thomas/catkin_ws/src/velodyne/velodyne_laserscan/include/**",
+        "/home/thomas/catkin_ws/src/velodyne/velodyne_pcl/include/**",
+        "/home/thomas/catkin_ws/src/velodyne/velodyne_pointcloud/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS"
+    }
+  ],
+  "version": 4
+}

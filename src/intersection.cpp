@@ -162,6 +162,11 @@ void Intersection::changeGear(dbw_polaris_msgs::GearCmd setGear){
 }
 
 void Intersection::run(){
+    ros::Duration(2).sleep();
+    enablePub.publish(std_msgs::Empty());
+    waypointPub.publish(waypoints.front());
+    ROS_INFO_STREAM("Four Way Stop Node Started!");
+
     while (ros::ok()){
         ros::spinOnce();
 
@@ -248,11 +253,6 @@ int main(int argc, char** argv){
 
     Intersection intersection(node, priv_nh);
     
-    ros.Duration(2).sleep();
-    enablePub.publish(std_msgs::Empty());
-    waypointPub.publish(waypoints.front());
-    ROS_INFO_STREAM("Four Way Stop Node Started!");
-
     intersection.run();
 }
 

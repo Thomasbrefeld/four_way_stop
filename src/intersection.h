@@ -84,6 +84,7 @@ private:
     double lastHeading;
 
     double changeAngle;
+    double turningAgnle;
 
     double maxRange;
     double minRange;
