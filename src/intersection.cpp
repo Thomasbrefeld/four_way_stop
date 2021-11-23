@@ -127,6 +127,7 @@ double Intersection::distance(sensor_msgs::NavSatFix point1, sensor_msgs::NavSat
 
 void Intersection::stopFun(){
     setCmd.linear.x = 0;
+    setCmd.angular.z = 0;
     
     while (ulcReport.speed_meas != 0){
         ros::spinOnce();
@@ -160,6 +161,8 @@ void Intersection::run(){
         if (status != initiate){
             switch (status){
                 case waypoint:
+                    setGear.cmd.gear = dbw_polaris_msgs::Gear::DRIVE;
+                    gearPub.publish(setGear);
                     if (distance(nav, waypoints.front()) < waypointFoundDistance){
                         status = turn;
                         waypoints.push(waypoints.front());
@@ -171,9 +174,12 @@ void Intersection::run(){
                 case turn:
                     switch (turnSequence){
                         case 1:
+                            ROS_INFO_STREAM("TurnSequence " << turnSequence);
                             changeAngle = 0;
                             turnSequence++;
+                            ROS_INFO_STREAM("TurnSequence End" << turnSequence);
                         case 2:
+                            ROS_INFO_STREAM("TurnSequence " << turnSequence);
                             setCmd.linear.x = speed * turnSpeedMulti;
                             setCmd.angular.z = maxTurn;
 
@@ -182,25 +188,39 @@ void Intersection::run(){
 
                             distNav = nav;
                             stopFun();
+                            setGear.cmd.gear = dbw_polaris_msgs::Gear::REVERSE;
+                            gearPub.publish(setGear);
+                            stopFun();
                             turnSequence++;
+                            ROS_INFO_STREAM("TurnSequence End" << turnSequence);
                         case 3: 
-                            setCmd.linear.x = -speed;
+                            ROS_INFO_STREAM("TurnSequence " << turnSequence);
+                            setCmd.linear.x = -speed * turnSpeedMulti;
                             setCmd.angular.z = 0;
 
-                            if (ulcReport.speed_meas < minForwardSpeed)
+                            ROS_INFO_STREAM("ulcReport.speed_meas: " << ulcReport.speed_meas << " minForwardSpeed: " << -minForwardSpeed );
+                            if (ulcReport.speed_meas > -minForwardSpeed)
                                 break;
 
                             turnSequence++;
+                            ROS_INFO_STREAM("TurnSequence End" << turnSequence);
+
                         case 4:
-                            setCmd.linear.x = -speed * turnSpeedMulti;
+                            ROS_INFO_STREAM("TurnSequence " << turnSequence);
+                            setCmd.linear.x = -speed * .75;
                             setCmd.angular.z = maxTurn/2;
 
                             if (distance(nav, distNav) < reverseDistance)
                                 break;
                             
                             stopFun();
+                            setGear.cmd.gear = dbw_polaris_msgs::Gear::DRIVE;
+                            gearPub.publish(setGear);
+                            stopFun();
                             turnSequence++;
+                            ROS_INFO_STREAM("TurnSequence End" << turnSequence);
                         case 5:
+                            ROS_INFO_STREAM("TurnSequence " << turnSequence);
                             setCmd.linear.x = speed;
                             setCmd.angular.z = 0;
 
@@ -208,6 +228,7 @@ void Intersection::run(){
                                 break;
 
                             status = waypoint;
+                            ROS_INFO_STREAM("TurnSequence End" << turnSequence);
                         default:
                             turnSequence = 1;
                     }
