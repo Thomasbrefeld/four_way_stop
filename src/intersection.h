@@ -10,7 +10,6 @@
 #include <dataspeed_ulc_msgs/UlcReport.h>
 #include <four_way_stop/commanderConfig.h>
 #include <dynamic_reconfigure/server.h>
-#include <piksi_rtk_msgs/VelNed.h>
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/Twist.h"
 
@@ -22,7 +21,6 @@ public:
     void run();
 private:
     void navCB(const sensor_msgs::NavSatFix::ConstPtr&);
-    void velCB(const piksi_rtk_msgs::VelNed::ConstPtr& msg){vel = *msg;};
     void scanCB(const sensor_msgs::LaserScan::ConstPtr&);
     void gearCB(const dbw_polaris_msgs::GearCmd::ConstPtr& msg){gear = *msg;};
     void ulcCB(const dataspeed_ulc_msgs::UlcReport::ConstPtr& msg){ulcReport = *msg;};
@@ -38,7 +36,6 @@ private:
     ros::NodeHandle nh;
 
     ros::Subscriber navSub;
-    ros::Subscriber velSub;
     ros::Subscriber scanSub;
     ros::Subscriber gearSub;
     ros::Subscriber ulcSub;
@@ -56,33 +53,34 @@ private:
     sensor_msgs::LaserScan scan;
     dbw_polaris_msgs::GearCmd gear;
     dataspeed_ulc_msgs::UlcReport ulcReport;
-    piksi_rtk_msgs::VelNed vel;
     geometry_msgs::Twist waypointCmd;
 
     geometry_msgs::Twist setCmd;
     dbw_polaris_msgs::GearCmd setGear;
 
     enum Status {initiate, stop, waypoint, lidarWait, turn};
+    Status status;
 
     std::queue<sensor_msgs::NavSatFix> waypoints;
 
-    Status status;
     int turnSequence;
     int sleepCount;
 
-    bool running;
-
-    double rateSleep;
-    
-    double speed;
-    double maxTurn;
-    double waypointFoundDistance;
-    
     double heading;
     double lastHeading;
-
     double changeAngle;
+
+    //Dynamic Reconfigure Variables
+    double speed;
+    double maxTurn;
+    double rateSleep;
+    double waypointFoundDistance;
     double turningAgnle;
+    double turnSpeedMulti;
+    double minForwardSpeed;
+    double reverseDistance;
+    int stopCount;
+    int minLidarStopCount;
 
     double maxRange;
     double minRange;

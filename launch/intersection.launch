@@ -11,7 +11,7 @@
         </include>
     </group>
     <group unless="$(arg sys)">
-        <node pkg="rosbag" type="play" name="player" args="--loop /home/thomas/catkin_ws/src/four_way_stop/2021-10-26-17-56-43.bag"/>
+        <node pkg="rosbag" type="play" name="player" args="--loop /home/thomas/Desktop/20211026/2021-10-26-17-56-43.bag"/>
     </group>
 
     <node name="waypoint" pkg="ltu_actor_route_waypoint" type="waypoint">

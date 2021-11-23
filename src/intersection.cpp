@@ -2,31 +2,34 @@
 
 Intersection::Intersection(ros::NodeHandle &node, ros::NodeHandle &priv_nh){
     navSub = node.subscribe<sensor_msgs::NavSatFix>("/piksi/navsatfix_best_fix", 1, &Intersection::navCB, this);
-    velSub = node.subscribe<piksi_rtk_msgs::VelNed>("/piksi/vel_ned", 1, &Intersection::velCB, this);
     scanSub = node.subscribe<sensor_msgs::LaserScan>("/scan", 1, &Intersection::scanCB, this);
     gearSub = node.subscribe<dbw_polaris_msgs::GearCmd>("/vehicle/gear_cmd", 1, &Intersection::gearCB, this);
     ulcSub = node.subscribe<dataspeed_ulc_msgs::UlcReport>("vehicle/ulc_report", 1, &Intersection::ulcCB, this);
     waypointSub = node.subscribe<geometry_msgs::Twist>("/waypoint/cmd", 1, &Intersection::waypointCmdCB, this);
 
     enablePub = node.advertise<std_msgs::Empty>("/vehicle/enable", 1);
-    disablePub = node.advertise<std_msgs::Empty>("/vehicle/disable", 1);
     twistPub = node.advertise<geometry_msgs::Twist>("/vehicle/cmd_vel", 1);
     gearPub = node.advertise<dbw_polaris_msgs::GearCmd>("/vehicle/gear_cmd", 1);
     waypointPub = node.advertise<sensor_msgs::NavSatFix>("/waypoint/waypoint", 1);
 
     server.setCallback(boost::bind(&Intersection::dynamicReconfigureCB, this, _1, _2));
 
+    //variables
+    status = initiate;
     rateSleep = .1;
     speed = 2.5;
     maxTurn = 1.3;
+    stopCount = 20;
     changeAngle = 0;
     turningAgnle = .1;
+    turnSpeedMulti = 1.2;
+    minForwardSpeed = .5;
+    reverseDistance = .00007;
+    waypointFoundDistance = .00003;
+    minLidarStopCount = 0;
 
-    status = initiate;
-    running = false;
-
+    //waypoints
     sensor_msgs::NavSatFix tmp;
-    
     tmp.latitude = 42.47225543898477;
     tmp.longitude = -83.25000730747014;
     waypoints.push(tmp);
@@ -34,8 +37,7 @@ Intersection::Intersection(ros::NodeHandle &node, ros::NodeHandle &priv_nh){
     tmp.longitude = -83.25000858228485;
     waypoints.push(tmp);
     
-    waypointFoundDistance = .00003;
-
+    //lidar box
     maxRange = 10;
     minRange = 2;
     maxIndex = 30;
@@ -49,9 +51,16 @@ void Intersection::dynamicReconfigureCB(four_way_stop::commanderConfig& msg, uin
         status = waypoint;
     
     speed = msg.speed;
+    rateSleep = msg.rateSleep;
     waypointFoundDistance = msg.waypointFoundDistance;
     maxTurn = msg.maxTurn;
     turningAgnle = msg.turningAgnle;
+    turnSpeedMulti = msg.turnSpeedMulti;
+    minForwardSpeed = msg.minForwardSpeed;
+    reverseDistance = msg.reverseDistance;
+    stopCount = msg.stopCount;
+    minLidarStopCount = msg.minLidarStopCount;
+
 }
 
 double Intersection::calcHeading(sensor_msgs::NavSatFix nav1, sensor_msgs::NavSatFix nav2){
@@ -105,7 +114,7 @@ void Intersection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
     }
 
     if (status == waypoint || status == lidarWait){
-        if (count > 0)
+        if (count > minLidarStopCount)
             status = lidarWait;
         else
             status = waypoint;
@@ -124,7 +133,7 @@ void Intersection::stopFun(){
         twistPub.publish(setCmd);
         ros::Duration(rateSleep).sleep();
     }
-    for (int i = 0; i < 20; ++i){
+    for (int i = 0; i < stopCount; ++i){
         ros::spinOnce();
         twistPub.publish(setCmd);
         ros::Duration(rateSleep).sleep();
@@ -141,11 +150,6 @@ void Intersection::run(){
     while (ros::ok()){
         ros::spinOnce();
 
-        if (status != initiate && !running)
-            running = true;
-        if (status == initiate && running)
-            running = false;
-
         setCmd.linear.x = 0;
         setCmd.linear.y = 0;
         setCmd.linear.z = 0; 
@@ -153,7 +157,7 @@ void Intersection::run(){
         setCmd.angular.y = 0;
         setCmd.angular.z = 0;
 
-        if (running){
+        if (status != initiate){
             switch (status){
                 case waypoint:
                     if (distance(nav, waypoints.front()) < waypointFoundDistance){
@@ -170,10 +174,10 @@ void Intersection::run(){
                             changeAngle = 0;
                             turnSequence++;
                         case 2:
-                            setCmd.linear.x = speed * 1.2;
+                            setCmd.linear.x = speed * turnSpeedMulti;
                             setCmd.angular.z = maxTurn;
 
-                            if (abs(changeAngle) < .10)
+                            if (abs(changeAngle) < turningAgnle)
                                 break;
 
                             distNav = nav;
@@ -183,15 +187,15 @@ void Intersection::run(){
                             setCmd.linear.x = -speed;
                             setCmd.angular.z = 0;
 
-                            if (ulcReport.speed_meas < .5)
+                            if (ulcReport.speed_meas < minForwardSpeed)
                                 break;
 
                             turnSequence++;
                         case 4:
-                            setCmd.linear.x = -speed * 1.2;
+                            setCmd.linear.x = -speed * turnSpeedMulti;
                             setCmd.angular.z = maxTurn/2;
 
-                            if (distance(nav, distNav) < .00007)
+                            if (distance(nav, distNav) < reverseDistance)
                                 break;
                             
                             stopFun();
@@ -200,7 +204,7 @@ void Intersection::run(){
                             setCmd.linear.x = speed;
                             setCmd.angular.z = 0;
 
-                            if (ulcReport.speed_meas < .5)
+                            if (ulcReport.speed_meas < minForwardSpeed)
                                 break;
 
                             status = waypoint;
