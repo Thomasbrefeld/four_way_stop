@@ -59,8 +59,6 @@ double Intersection::calcHeading(sensor_msgs::NavSatFix nav1, sensor_msgs::NavSa
     double y = sin(dLon) * cos(nav2.latitude);
     double x = cos(nav1.latitude)*sin(nav2.latitude) - sin(nav1.latitude)*cos(nav2.latitude)*cos(dLon);
     double out = abs(atan2(y, x));
-    // if (out < 0)
-    //     out += M_PI;
     return out;
 }
 
@@ -85,17 +83,12 @@ void Intersection::navCB(const sensor_msgs::NavSatFix::ConstPtr& msg){
             changeAngle += calcChange + M_PI;
         else 
             changeAngle += calcChange;
-
-        //ROS_INFO_STREAM("HEADING: " << heading << " LastHeading: " << lastHeading << " calcChange: " << calcChange << " changeAngle: " << changeAngle);
     }
 }
 
 void Intersection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
     int count = 0;
     float range;
-
-    //double avg_range = 0;
-    //int range_count = 0;
 
     for (int index; index < msg->ranges.size(); index++){
         float loc = (index * scan.angle_increment - M_PI) * 180 / M_PI;
@@ -105,9 +98,6 @@ void Intersection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
         if (minIndex < loc && maxIndex > loc){
             if (range > minRange && range < maxRange){
                 if (inten > 75){
-                    //ROS_INFO_STREAM("loc: " << loc << "range: " << range << "inten: " << inten);
-                    //avg_range += range;
-                    //range_count++; 
                     count++;
                 }
             }
@@ -134,35 +124,16 @@ void Intersection::stopFun(){
         twistPub.publish(setCmd);
         ros::Duration(rateSleep).sleep();
     }
-}
-
-void Intersection::getDirection(){
-    float alpha = .05; //lower alpha gives speed less influence
-    while (ulcReport.speed_meas == 0){
-        ros::spinOnce();
-        setCmd.linear.x = (alpha * speed) + (1.0 - alpha) * setCmd.linear.x;
-        twistPub.publish(setCmd);
-        ros::Duration(rateSleep).sleep();
-    }
-}
-
-void Intersection::changeGear(dbw_polaris_msgs::GearCmd setGear){
-    if (gear == setGear)
-        return;
-
-    stopFun();
-    gearPub.publish(setGear);
-
-    while (gear != setGear){
+    for (int i = 0; i < 20; ++i){
         ros::spinOnce();
         twistPub.publish(setCmd);
         ros::Duration(rateSleep).sleep();
     }
-    getDirection();
+
 }
 
 void Intersection::run(){
-    ros::Duration(2).sleep();
+    ros::Duration(1).sleep();
     enablePub.publish(std_msgs::Empty());
     waypointPub.publish(waypoints.front());
     ROS_INFO_STREAM("Four Way Stop Node Started!");
@@ -185,8 +156,6 @@ void Intersection::run(){
         if (running){
             switch (status){
                 case waypoint:
-                    setGear.cmd.gear = dbw_polaris_msgs::Gear::DRIVE;
-                    changeGear(setGear);
                     if (distance(nav, waypoints.front()) < waypointFoundDistance){
                         status = turn;
                         waypoints.push(waypoints.front());
@@ -198,41 +167,48 @@ void Intersection::run(){
                 case turn:
                     switch (turnSequence){
                         case 1:
-                            setGear.cmd.gear = dbw_polaris_msgs::Gear::DRIVE;
-                            changeGear(setGear);
-                            turnSequence++;
                             changeAngle = 0;
+                            turnSequence++;
                         case 2:
-                            setCmd.linear.x = speed;
+                            setCmd.linear.x = speed * 1.2;
                             setCmd.angular.z = maxTurn;
 
                             if (abs(changeAngle) < .10)
                                 break;
 
-                            setGear.cmd.gear = dbw_polaris_msgs::Gear::REVERSE;
-                            changeGear(setGear);
                             distNav = nav;
+                            stopFun();
                             turnSequence++;
-                        case 3:
+                        case 3: 
                             setCmd.linear.x = -speed;
+                            setCmd.angular.z = 0;
+
+                            if (ulcReport.speed_meas < .5)
+                                break;
+
+                            turnSequence++;
+                        case 4:
+                            setCmd.linear.x = -speed * 1.2;
                             setCmd.angular.z = maxTurn/2;
 
                             if (distance(nav, distNav) < .00007)
                                 break;
                             
+                            stopFun();
                             turnSequence++;
-                        case 4:
-                            setGear.cmd.gear = dbw_polaris_msgs::Gear::DRIVE;
-                            changeGear(setGear);
+                        case 5:
+                            setCmd.linear.x = speed;
+                            setCmd.angular.z = 0;
+
+                            if (ulcReport.speed_meas < .5)
+                                break;
+
                             status = waypoint;
                         default:
                             turnSequence = 1;
                     }
                     break;
                 case lidarWait:
-                    setCmd.linear.x = 0;
-                    break;
-                case stop:
                     setCmd.linear.x = 0;
                     break;
                 default:

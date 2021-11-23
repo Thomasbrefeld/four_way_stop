@@ -31,10 +31,7 @@ private:
 
     double distance(sensor_msgs::NavSatFix, sensor_msgs::NavSatFix);
     double calcHeading(sensor_msgs::NavSatFix, sensor_msgs::NavSatFix);
-    void changeGear(dbw_polaris_msgs::GearCmd);
-    void turnSteps();
     void stopFun();
-    void getDirection();
 
     dynamic_reconfigure::Server<four_way_stop::commanderConfig> server;
 
@@ -71,6 +68,7 @@ private:
 
     Status status;
     int turnSequence;
+    int sleepCount;
 
     bool running;
 
