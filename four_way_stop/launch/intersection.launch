@@ -1,0 +1,23 @@
+<launch>
+    <arg name="sys" default="false"/>
+    <group if="$(arg sys)">
+        <include file="$(find dbw_polaris_can)/launch/dbw.launch" />
+        <include file="$(find actor2_support)/launch/sensors.launch"/>
+    </group>
+    <group unless="$(arg sys)">
+        <node pkg="rosbag" type="play" name="player" args="--loop /home/thomas/Desktop/20211026/2021-10-26-17-56-43.bag"/>
+    </group>
+
+    <node name="waypoint" pkg="ltu_actor_route_waypoint" type="waypoint">
+        <param name="speed" value="2.5"/>
+        <param name="gps_fix" value="/piksi/navsatfix_best_fix"/>
+        <param name="gps_vel_ned" value="/piksi/vel_ned"/>
+    </node>
+
+
+    <node name="intersection" pkg="four_way_stop" type="four_way_stop_node" output="screen">
+        
+    </node>
+
+    <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui"/>
+</launch>

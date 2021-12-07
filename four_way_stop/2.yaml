@@ -1,0 +1,45 @@
+!!python/object/new:dynamic_reconfigure.encoding.Config
+dictitems:
+  groups: !!python/object/new:dynamic_reconfigure.encoding.Config
+    dictitems:
+      groups: !!python/object/new:dynamic_reconfigure.encoding.Config
+        state: []
+      id: 0
+      initiate: true
+      maxIndex: 10
+      maxRange: 20
+      maxTurn: 1.3
+      minForwardSpeed: 0.7
+      minIndex: -30
+      minLidarStopCount: 0
+      minRange: 2
+      name: Default
+      parameters: !!python/object/new:dynamic_reconfigure.encoding.Config
+        state: []
+      parent: 0
+      rateSleep: 0.1
+      reverseDistance: 2.68
+      speed: 2.5
+      state: true
+      stopCount: 10
+      turnSpeedMulti: 1.05
+      turningAgnle: 24.9
+      type: ''
+      waypointFoundDistance: 3.0e-05
+    state: []
+  initiate: true
+  maxIndex: 10
+  maxRange: 20
+  maxTurn: 1.3
+  minForwardSpeed: 0.7
+  minIndex: -30
+  minLidarStopCount: 0
+  minRange: 2
+  rateSleep: 0.1
+  reverseDistance: 2.68
+  speed: 2.5
+  stopCount: 10
+  turnSpeedMulti: 1.05
+  turningAgnle: 24.9
+  waypointFoundDistance: 3.0e-05
+state: []
