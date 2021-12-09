@@ -92,7 +92,7 @@ private:
     double maxIndex;
     double minIndex;
 
-    int timeTmp;
+    int clearToMove;
 };
 
 #endif
