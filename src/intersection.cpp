@@ -189,16 +189,15 @@ void Intersection::run(){
                 case turn:
                     switch (turnSequence){
                         case 1:
-                            ROS_INFO_STREAM("TurnSequence " << turnSequence);
+                            //ROS_INFO_STREAM("TurnSequence " << turnSequence);
                             changeAngle = 0;
                             turnSequence++;
-                            ROS_INFO_STREAM("TurnSequence End" << turnSequence);
                         case 2:
-                            ROS_INFO_STREAM("TurnSequence " << turnSequence);
+                            //ROS_INFO_STREAM("TurnSequence " << turnSequence);
                             setCmd.linear.x = speed * turnSpeedMulti;
                             setCmd.angular.z = maxTurn;
 
-                            ROS_INFO_STREAM("ChangeAngle: " << changeAngle << " ABS(GhangeAngle) " << abs(changeAngle) << " turning angle: " << turningAgnle);
+                            //ROS_INFO_STREAM("ChangeAngle: " << changeAngle << " ABS(GhangeAngle) " << abs(changeAngle) << " turning angle: " << turningAgnle);
                             if (abs(changeAngle) < turningAgnle)
                                 break;
 
@@ -209,39 +208,34 @@ void Intersection::run(){
                             gearPub.publish(setGear);
                             stopFun();
                             turnSequence++;
-                            ROS_INFO_STREAM("TurnSequence End" << turnSequence);
                         case 3: 
-                            ROS_INFO_STREAM("TurnSequence " << turnSequence);
+                            //ROS_INFO_STREAM("TurnSequence " << turnSequence);
                             setCmd.linear.x = -speed * turnSpeedMulti;
                             setCmd.angular.z = 0;
                             changeAngle = 0;
 
-                            ROS_INFO_STREAM("ulcReport.speed_meas: " << ulcReport.speed_meas << " minForwardSpeed: " << -minForwardSpeed );
+                            //ROS_INFO_STREAM("ulcReport.speed_meas: " << ulcReport.speed_meas << " minForwardSpeed: " << -minForwardSpeed );
                             if (ulcReport.speed_meas > -minForwardSpeed)
                                 break;
 
                             turnSequence++;
-                            ROS_INFO_STREAM("TurnSequence End" << turnSequence);
 
                         case 4:
-                            ROS_INFO_STREAM("TurnSequence " << turnSequence);
+                            //ROS_INFO_STREAM("TurnSequence " << turnSequence);
                             setCmd.linear.x = -speed * .9;
                             setCmd.angular.z = maxTurn/2;
 
-                            ROS_INFO_STREAM("ChangeAngle: " << changeAngle << " ABS(GhangeAngle) " << abs(changeAngle) << " turning angle: " << turningAgnle);
+                            //ROS_INFO_STREAM("ChangeAngle: " << changeAngle << " ABS(GhangeAngle) " << abs(changeAngle) << " turning angle: " << turningAgnle);
                             if (abs(changeAngle) < turningAgnle * reverseDistance)
                                 break;
-                            //if (distance(nav, distNav) < reverseDistance)
-                            //    break;
                             
                             stopFun();
                             setGear.cmd.gear = dbw_polaris_msgs::Gear::DRIVE;
                             gearPub.publish(setGear);
                             stopFun();
                             turnSequence++;
-                            ROS_INFO_STREAM("TurnSequence End" << turnSequence);
                         case 5:
-                            ROS_INFO_STREAM("TurnSequence " << turnSequence);
+                            //ROS_INFO_STREAM("TurnSequence " << turnSequence);
                             setCmd.linear.x = speed;
                             setCmd.angular.z = 0;
 
@@ -249,7 +243,6 @@ void Intersection::run(){
                                 break;
 
                             status = waypoint;
-                            ROS_INFO_STREAM("TurnSequence End" << turnSequence);
                         default:
                             turnSequence = 1;
                     }
