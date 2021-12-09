@@ -5,6 +5,7 @@ Intersection::Intersection(ros::NodeHandle &node, ros::NodeHandle &priv_nh){
     scanSub = node.subscribe<sensor_msgs::LaserScan>("/scan", 1, &Intersection::scanCB, this);
     gearSub = node.subscribe<dbw_polaris_msgs::GearCmd>("/vehicle/gear_cmd", 1, &Intersection::gearCB, this);
     ulcSub = node.subscribe<dataspeed_ulc_msgs::UlcReport>("vehicle/ulc_report", 1, &Intersection::ulcCB, this);
+    steeringSub = node.subscribe<dbw_polaris_msgs::SteeringReport>("/vehicle/steering_report", 1, &Intersection::steeringCB, this);
     waypointSub = node.subscribe<geometry_msgs::Twist>("/waypoint/cmd", 1, &Intersection::waypointCmdCB, this);
 
     enablePub = node.advertise<std_msgs::Empty>("/vehicle/enable", 1);
@@ -30,11 +31,11 @@ Intersection::Intersection(ros::NodeHandle &node, ros::NodeHandle &priv_nh){
 
     //waypoints
     sensor_msgs::NavSatFix tmp;
-    tmp.latitude = 42.47225543898477;
-    tmp.longitude = -83.25000730747014;
+    tmp.latitude = 42.472398067715865;
+    tmp.longitude = -83.25019544811526;
     waypoints.push(tmp);
-    tmp.latitude = 42.47238102165528;
-    tmp.longitude = -83.25000858228485;
+    tmp.latitude = 42.47240204214436;
+    tmp.longitude = -83.24989903827807;
     waypoints.push(tmp);
     
     //lidar box
@@ -71,6 +72,20 @@ double Intersection::calcHeading(sensor_msgs::NavSatFix nav1, sensor_msgs::NavSa
     return out;
 }
 
+void Intersection::steeringCB(const dbw_polaris_msgs::SteeringReport::ConstPtr& msg){
+    if (steer.header.seq != 0)
+        lastSteer = steer;
+    else {
+        steer = *msg;
+        return;
+    }
+    steer = *msg;
+
+    double timeChange = (steer.header.stamp - lastSteer.header.stamp).toSec();
+    changeAngle += timeChange * (steer.steering_wheel_angle * ulcReport.speed_meas);
+    //ROS_INFO_STREAM(changeAngle << " - " << timeChange * (steer.steering_wheel_angle * ulcReport.speed_meas));
+}
+
 void Intersection::navCB(const sensor_msgs::NavSatFix::ConstPtr& msg){
     if (nav.header.seq != 0)
         lastNav = nav;
@@ -84,14 +99,6 @@ void Intersection::navCB(const sensor_msgs::NavSatFix::ConstPtr& msg){
         lastHeading = heading;
 
         heading = calcHeading(nav, lastNav);
-
-        double calcChange = heading - lastHeading;
-        if (calcChange > 1.57)
-            changeAngle += calcChange - M_PI;
-        else if (calcChange < - 1.57)
-            changeAngle += calcChange + M_PI;
-        else 
-            changeAngle += calcChange;
     }
 }
 
@@ -183,8 +190,10 @@ void Intersection::run(){
                             setCmd.linear.x = speed * turnSpeedMulti;
                             setCmd.angular.z = maxTurn;
 
+                            ROS_INFO_STREAM("ChangeAngle: " << changeAngle << " ABS(GhangeAngle) " << abs(changeAngle) << " turning angle: " << turningAgnle);
                             if (abs(changeAngle) < turningAgnle)
                                 break;
+
 
                             distNav = nav;
                             stopFun();
@@ -197,6 +206,7 @@ void Intersection::run(){
                             ROS_INFO_STREAM("TurnSequence " << turnSequence);
                             setCmd.linear.x = -speed * turnSpeedMulti;
                             setCmd.angular.z = 0;
+                            changeAngle = 0;
 
                             ROS_INFO_STREAM("ulcReport.speed_meas: " << ulcReport.speed_meas << " minForwardSpeed: " << -minForwardSpeed );
                             if (ulcReport.speed_meas > -minForwardSpeed)
@@ -207,11 +217,14 @@ void Intersection::run(){
 
                         case 4:
                             ROS_INFO_STREAM("TurnSequence " << turnSequence);
-                            setCmd.linear.x = -speed * .75;
+                            setCmd.linear.x = -speed * .9;
                             setCmd.angular.z = maxTurn/2;
 
-                            if (distance(nav, distNav) < reverseDistance)
+                            ROS_INFO_STREAM("ChangeAngle: " << changeAngle << " ABS(GhangeAngle) " << abs(changeAngle) << " turning angle: " << turningAgnle);
+                            if (abs(changeAngle) < turningAgnle * reverseDistance)
                                 break;
+                            //if (distance(nav, distNav) < reverseDistance)
+                            //    break;
                             
                             stopFun();
                             setGear.cmd.gear = dbw_polaris_msgs::Gear::DRIVE;

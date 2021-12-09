@@ -9,7 +9,7 @@ dictitems:
       maxIndex: 10
       maxRange: 20
       maxTurn: 1.3
-      minForwardSpeed: 0.69
+      minForwardSpeed: 0.7
       minIndex: -30
       minLidarStopCount: 0
       minRange: 2
@@ -18,12 +18,12 @@ dictitems:
         state: []
       parent: 0
       rateSleep: 0.1
-      reverseDistance: 6.365e-05
+      reverseDistance: 2.68
       speed: 2.5
       state: true
       stopCount: 10
-      turnSpeedMulti: 1.0499999999999998
-      turningAgnle: 0.06
+      turnSpeedMulti: 1.05
+      turningAgnle: 24.9
       type: ''
       waypointFoundDistance: 3.0e-05
     state: []
@@ -31,15 +31,15 @@ dictitems:
   maxIndex: 10
   maxRange: 20
   maxTurn: 1.3
-  minForwardSpeed: 0.69
+  minForwardSpeed: 0.7
   minIndex: -30
   minLidarStopCount: 0
   minRange: 2
   rateSleep: 0.1
-  reverseDistance: 6.365e-05
+  reverseDistance: 2.68
   speed: 2.5
   stopCount: 10
-  turnSpeedMulti: 1.0499999999999998
-  turningAgnle: 0.06
+  turnSpeedMulti: 1.05
+  turningAgnle: 24.9
   waypointFoundDistance: 3.0e-05
 state: []
