@@ -28,6 +28,7 @@ Intersection::Intersection(ros::NodeHandle &node, ros::NodeHandle &priv_nh){
     reverseDistance = .00007;
     waypointFoundDistance = .00003;
     minLidarStopCount = 0;
+    clearToMove = 0;
 
     //waypoints
     sensor_msgs::NavSatFix tmp;
@@ -115,16 +116,23 @@ void Intersection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
             if (range > minRange && range < maxRange){
                 if (inten > 75){
                     count++;
+                    clearToMove = 0;
                 }
             }
         }
     }
 
-    if (status == waypoint || status == lidarWait){
-        if (count > minLidarStopCount)
-            status = lidarWait;
-        else
-            status = waypoint;
+    if (clearToMove < 3){
+        status = lidarWait;
+        clearToMove++;
+    }
+    else{
+        if (status == waypoint || status == lidarWait){
+            if (count > minLidarStopCount)
+                status = lidarWait;
+            else
+                status = waypoint;
+        }
     }
 }
 
@@ -269,6 +277,3 @@ int main(int argc, char** argv){
     
     intersection.run();
 }
-
-
-
