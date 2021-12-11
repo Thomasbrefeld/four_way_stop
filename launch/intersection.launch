@@ -3,16 +3,14 @@
     <group if="$(eval car == 1)">
         <include file="$(find dbw_polaris_can)/launch/dbw.launch" />
         <include file="$(find velodyne_pointcloud)/launch/VLP16_points.launch">
-            <arg name="laserscan_ring" value="5"/>
+            <arg name="laserscan_ring" value="7"/>
         </include>
-        <group ns="baseline">
-            <include file="$(find piksi_multi_rtk_ros)/launch/piksi_multi_rover.launch">
+        <include file="$(find piksi_multi_rtk_ros)/launch/piksi_multi_rover.launch">
             <arg name="interface" value="tcp" />
             <arg name="tcp_addr" value="192.168.0.222" />
             <arg name="load_enu_origin_from_file"   value="true" />
             <arg name="enu_origin_file"             value="$(find ltu_actor_vehicle_gem)/enu_origin.yaml"/>
-            </include>
-        </group>
+        </include>
     </group>
     <group if="$(eval car == 2)">
         <include file="$(find dbw_polaris_can)/launch/dbw.launch" />
@@ -20,14 +18,12 @@
             <arg name="device_ip" default="192.168.60.50" />
             <arg name="laserscan_ring" value="12"/>
         </include>
-        <group ns="baseline">
-            <include file="$(find piksi_multi_rtk_ros)/launch/piksi_multi_rover.launch">
-                <arg name="interface" value="tcp" />
-                <arg name="tcp_addr" value="192.168.60.30" />
-                <arg name="load_enu_origin_from_file" value="true" /> 
-                <arg name="enu_origin_file" value="$(find actor2_support)/config/piksi/enu_origin.yaml"/>
-            </include>
-        </group>
+        <include file="$(find piksi_multi_rtk_ros)/launch/piksi_multi_rover.launch">
+            <arg name="interface" value="tcp" />
+            <arg name="tcp_addr" value="192.168.60.30" />
+            <arg name="load_enu_origin_from_file" value="true" /> 
+            <arg name="enu_origin_file" value="$(find actor2_support)/config/piksi/enu_origin.yaml"/>
+        </include>
     </group>
 
     <node name="waypoint" pkg="ltu_actor_route_waypoint" type="waypoint">
