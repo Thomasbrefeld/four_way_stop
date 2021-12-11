@@ -22,7 +22,7 @@ Intersection::Intersection(ros::NodeHandle &node, ros::NodeHandle &priv_nh){
     maxTurn = 1.3;
     stopCount = 20;
     changeAngle = 0;
-    turningAgnle = .1;
+    turningAgnle = 25;
     turnSpeedMulti = 1.2;
     minForwardSpeed = .5;
     reverseDistance = .00007;
@@ -32,17 +32,26 @@ Intersection::Intersection(ros::NodeHandle &node, ros::NodeHandle &priv_nh){
 
     //waypoints
     sensor_msgs::NavSatFix tmp;
-    tmp.latitude = 42.472398067715865;
-    tmp.longitude = -83.25019544811526;
+    tmp.latitude = 42.47607849737354;
+    tmp.longitude = -83.24802861225244;
     waypoints.push(tmp);
-    tmp.latitude = 42.47240204214436;
-    tmp.longitude = -83.24989903827807;
+    tmp.latitude = 42.47584758130652;
+    tmp.longitude = -83.24767034306423;
     waypoints.push(tmp);
+    /*
+    sensor_msgs::NavSatFix tmp;
+    tmp.latitude = 42.47227875741365;
+    tmp.longitude = -83.25001776433625;
+    waypoints.push(tmp);
+    tmp.latitude = 42.472405873261486;
+    tmp.longitude = -83.250016340915;
+    waypoints.push(tmp);
+    */
     
     //lidar box
     maxRange = 10;
     minRange = 2;
-    maxIndex = 30;
+    maxIndex = 10;
     minIndex = -30;
 }
 
@@ -63,6 +72,10 @@ void Intersection::dynamicReconfigureCB(four_way_stop::commanderConfig& msg, uin
     stopCount = msg.stopCount;
     minLidarStopCount = msg.minLidarStopCount;
 
+    maxRange = msg.maxRange;
+    minRange = msg.minRange;
+    maxIndex = msg.maxIndex;
+    minIndex = msg.minIndex;
 }
 
 double Intersection::calcHeading(sensor_msgs::NavSatFix nav1, sensor_msgs::NavSatFix nav2){
@@ -83,7 +96,7 @@ void Intersection::steeringCB(const dbw_polaris_msgs::SteeringReport::ConstPtr& 
     steer = *msg;
 
     double timeChange = (steer.header.stamp - lastSteer.header.stamp).toSec();
-    changeAngle += timeChange * (steer.steering_wheel_angle * ulcReport.speed_meas);
+    changeAngle += timeChange * (steer.steering_wheel_angle * (ulcReport.speed_meas * .5));
     //ROS_INFO_STREAM(changeAngle << " - " << timeChange * (steer.steering_wheel_angle * ulcReport.speed_meas));
 }
 
@@ -104,36 +117,46 @@ void Intersection::navCB(const sensor_msgs::NavSatFix::ConstPtr& msg){
 }
 
 void Intersection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
+    if (status == initiate || status == turn)
+        return;
     int count = 0;
     float range;
+    
+    for (int index = 0; index < msg->ranges.size(); index++){
 
-    for (int index; index < msg->ranges.size(); index++){
-        float loc = (index * scan.angle_increment - M_PI) * 180 / M_PI;
-        float range = scan.ranges.at(index);
-        float inten = scan.intensities.at(index);
-
+        float loc = (index * msg->angle_increment - M_PI) * 180 / M_PI;
+        float range = msg->ranges.at(index);
+        float inten = msg->intensities.at(index);
+        
         if (minIndex < loc && maxIndex > loc){
             if (range > minRange && range < maxRange){
-                if (inten > 75){
+                if (inten > 25){
+                    ROS_INFO_STREAM(loc);
                     count++;
                     clearToMove = 0;
                 }
             }
         }
     }
-
-    if (clearToMove < 3){
+    if (clearToMove < 5){
         status = lidarWait;
         clearToMove++;
     }
     else{
+        //ROS_INFO_STREAM("ELSE");
         if (status == waypoint || status == lidarWait){
-            if (count > minLidarStopCount)
+            //ROS_INFO_STREAM("Count: " << count);
+            if (count > minLidarStopCount){
+                //ROS_INFO_STREAM("LIDAR WAIT");
                 status = lidarWait;
-            else
+            }
+            else{
+                //ROS_INFO_STREAM("WAYPOIUNT");
                 status = waypoint;
+            }
         }
     }
+    //ROS_INFO_STREAM("STATUS ++++ " << status);
 }
 
 double Intersection::distance(sensor_msgs::NavSatFix point1, sensor_msgs::NavSatFix point2){
@@ -197,7 +220,7 @@ void Intersection::run(){
                             setCmd.linear.x = speed * turnSpeedMulti;
                             setCmd.angular.z = maxTurn;
 
-                            //ROS_INFO_STREAM("ChangeAngle: " << changeAngle << " ABS(GhangeAngle) " << abs(changeAngle) << " turning angle: " << turningAgnle);
+                            ROS_INFO_STREAM("ChangeAngle: " << changeAngle << " ABS(GhangeAngle) " << abs(changeAngle) << " turning angle: " << turningAgnle);
                             if (abs(changeAngle) < turningAgnle)
                                 break;
 
@@ -214,7 +237,7 @@ void Intersection::run(){
                             setCmd.angular.z = 0;
                             changeAngle = 0;
 
-                            //ROS_INFO_STREAM("ulcReport.speed_meas: " << ulcReport.speed_meas << " minForwardSpeed: " << -minForwardSpeed );
+                            ROS_INFO_STREAM("ulcReport.speed_meas: " << ulcReport.speed_meas << " minForwardSpeed: " << -minForwardSpeed );
                             if (ulcReport.speed_meas > -minForwardSpeed)
                                 break;
 
@@ -223,10 +246,10 @@ void Intersection::run(){
                         case 4:
                             //ROS_INFO_STREAM("TurnSequence " << turnSequence);
                             setCmd.linear.x = -speed * .9;
-                            setCmd.angular.z = maxTurn/2;
+                            setCmd.angular.z = maxTurn * .75;
 
                             //ROS_INFO_STREAM("ChangeAngle: " << changeAngle << " ABS(GhangeAngle) " << abs(changeAngle) << " turning angle: " << turningAgnle);
-                            if (abs(changeAngle) < turningAgnle * reverseDistance)
+                            if (abs(changeAngle) < reverseDistance)
                                 break;
                             
                             stopFun();
